@@ -80,6 +80,18 @@ char = satisfy . (==)
 string :: String -> Parser String
 string "" = pure ""
 string (c:cs) = char c >> string cs >> return (c:cs)
+
+-- | Matches quoted text
+quoted :: Parser String
+quoted = char '"' >> aux
+    where
+        aux = upToI $ ((:"") <$> satisfy (/='\\')) >>= \last -> char '"' >> return last
+        
+-- | Matches a non-escaped char
+notEscaped :: Char -> Parser Char
+notEscaped ch = do
+    char ch
+    
                                     
 -- | One or more of a parser
 some :: Parser a -> Parser [a]
@@ -105,6 +117,13 @@ upTo :: Parser a -> Parser String
 upTo pred = (pred >> return "") <|> do
     ch <- item
     str <- upTo pred
+    return (ch:str)
+    
+-- | Matches a string up to and including the given parser predicate's match
+upToI :: Parser String -> Parser String
+upToI pred = pred <|> do
+    ch <- item
+    str <- upToI pred
     return (ch:str)
 
 -- | A character that matches any of the given characters
@@ -136,12 +155,15 @@ integer = do
 number :: Parser String
 number = do
     sign <- maybeOne (char '-')
-    whole <- (natural <|> pure "0")
+    whole <- maybeOne natural
     fractional <- maybeOne $ do
         char '.'
         n <- natural
         return $ "." ++ n
         
-    return $ sign ++ whole ++ if null fractional
+    if null whole && null fractional
+        then failure "Couldn't match number"
+        else do        
+            return $ sign ++ (if null whole then "0" else head whole) ++ if null fractional
                                 then ""
                                 else head fractional
