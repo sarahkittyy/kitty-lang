@@ -5,6 +5,7 @@ module Parser.Parser where
 
 import Control.Applicative hiding (some, many)
 import Data.Char
+import Text.Read (readMaybe)
 
 -- | Takes in a string and either returns an error or the parsed tokens
 newtype Parser a = Parser { parse :: String -> Either String (a, String) }
@@ -66,14 +67,14 @@ item = Parser $ \input ->
         else Right (head input, tail input)
         
 -- | Returns a single char only if it matches a given predicate
-satisfies :: (Char -> Bool) -> Parser Char
-satisfies pred = item >>= \ch -> if pred ch
+satisfy :: (Char -> Bool) -> Parser Char
+satisfy pred = item >>= \ch -> if pred ch
                                     then pure ch
                                     else failure "Could not satisfy given predicate."
                                     
 -- | Matches a given char
 char :: Char -> Parser Char
-char = satisfies . (==)
+char = satisfy . (==)
 
 -- | Matches an exact string
 string :: String -> Parser String
@@ -102,8 +103,38 @@ maybeOne p = nOf 1 p <|> pure []
 -- | A character that matches any of the given characters
 oneOf :: [Char] -> Parser Char
 oneOf [] = failure "Could not match any characters given in parser oneOf"
-oneOf (x:xs) = satisfies (==x) <|> oneOf xs
+oneOf (x:xs) = satisfy (==x) <|> oneOf xs
 
 -- | Matches a parser wrapped in parenthesis
 parens :: Parser a -> Parser a
 parens p = char '(' >> p >>= \res -> (char ')' >> return res)
+
+-- | Matches a single digit
+digit :: Parser Char
+digit = satisfy isDigit
+
+-- | Matches a natural number
+natural :: Parser String
+natural = some digit
+
+-- | Matches an integer
+integer :: Parser String
+integer = do
+    sign <- maybeOne (char '-')
+    num <- natural
+    
+    return $ sign ++ num
+    
+-- | Matches a floating point number
+number :: Parser String
+number = do
+    sign <- maybeOne (char '-')
+    whole <- (natural <|> pure "0")
+    fractional <- maybeOne $ do
+        char '.'
+        n <- natural
+        return $ "." ++ n
+        
+    return $ sign ++ whole ++ if null fractional
+                                then ""
+                                else head fractional
