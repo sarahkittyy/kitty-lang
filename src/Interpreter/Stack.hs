@@ -2,7 +2,7 @@ module Interpreter.Stack where
     
 data Stack = Stack { vars :: [(String, String)]
                    }
-                   deriving (Show)
+                   deriving (Show) 
    
 -- | Defines an empty stack.
 emptyStack :: Stack
