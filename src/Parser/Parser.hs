@@ -170,4 +170,4 @@ number = do
 
 -- | Matches any amount of spaces
 spacing :: Parser String
-spacing = some (satisfy isSpace)
+spacing = many (satisfy isSpace)
