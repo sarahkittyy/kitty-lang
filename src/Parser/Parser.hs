@@ -167,3 +167,7 @@ number = do
             return $ sign ++ (if null whole then "0" else head whole) ++ if null fractional
                                 then ""
                                 else head fractional
+
+-- | Matches any amount of spaces
+spacing :: Parser String
+spacing = some (satisfy isSpace)
