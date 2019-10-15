@@ -100,6 +100,13 @@ nOf n p = if n == 0
 maybeOne :: Parser a -> Parser [a]
 maybeOne p = nOf 1 p <|> pure []
 
+-- | Matches a string up until the predicate parser matches
+upTo :: Parser a -> Parser String
+upTo pred = (pred >> return "") <|> do
+    ch <- item
+    str <- upTo pred
+    return (ch:str)
+
 -- | A character that matches any of the given characters
 oneOf :: [Char] -> Parser Char
 oneOf [] = failure "Could not match any characters given in parser oneOf"
